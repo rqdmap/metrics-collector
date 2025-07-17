@@ -1,6 +1,21 @@
-version: '3.8'
-
 services:
+  nginx-init:
+    image: alpine
+    container_name: nginx-init
+    volumes:
+      - ./nginx/nginx.conf.template:/tmp/nginx.conf.template:ro
+      - ./nginx/nginx.conf:/tmp/nginx.conf
+    environment:
+      - METRICS_TOKEN=this_is_metrics_token
+    command: >
+      sh -c "
+        echo 'Generating nginx.conf from template...' &&
+        echo 'Token value: '$$METRICS_TOKEN &&
+        sed 's/\$${METRICS_TOKEN}/'$$METRICS_TOKEN'/g' /tmp/nginx.conf.template > /tmp/nginx.conf &&
+        echo 'nginx.conf generated successfully' &&
+        head -20 /tmp/nginx.conf
+      "
+
   # nginx作为唯一的外部入口
   nginx:
     image: nginx:alpine
@@ -14,6 +29,7 @@ services:
       - ./nginx/logs:/var/log/nginx
     restart: unless-stopped
     depends_on:
+      - nginx-init
       - node-exporter
       - cadvisor
     networks:
@@ -59,4 +75,4 @@ services:
 networks:
   internal:
     driver: bridge
-    internal: true
+      # internal: true

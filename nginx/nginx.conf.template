@@ -30,11 +30,11 @@ http {
     upstream node_exporter {
         server node-exporter:9100;
     }
-    
+
     upstream cadvisor {
         server cadvisor:8080;
     }
-    
+
     # 监控网关服务配置
     server {
         listen 80;
@@ -50,9 +50,9 @@ http {
         # Node Exporter metrics（系统指标）
         location /metrics/node {
             access_log off;
-            
+
             # Token认证
-            if ($arg_token != "this_is_metrics_token") {
+            if ($arg_token != "${METRICS_TOKEN}") {
                 return 403 '{"error": "Forbidden", "service": "node-exporter"}';
             }
 
@@ -67,8 +67,8 @@ http {
         # cAdvisor metrics（容器指标）
         location /metrics/cadvisor {
             access_log off;
-            
-            if ($arg_token != "this_is_metrics_token") {
+
+            if ($arg_token != "${METRICS_TOKEN}") {
                 return 403 '{"error": "Forbidden", "service": "cadvisor"}';
             }
 
@@ -83,8 +83,8 @@ http {
         # 所有metrics的聚合端点（可选）
         location /metrics/all {
             access_log off;
-            
-            if ($arg_token != "this_is_metrics_token") {
+
+            if ($arg_token != "${METRICS_TOKEN}") {
                 return 403 '{"error": "Forbidden", "service": "all-metrics"}';
             }
 
