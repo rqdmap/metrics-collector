@@ -28,16 +28,16 @@ http {
 
     # 上游服务定义（内部网络中的监控服务）
     upstream node_exporter {
-        server node-exporter:9100;
+        server 127.0.0.1:9100;
     }
 
     upstream cadvisor {
-        server cadvisor:8080;
+        server 127.0.0.1:8080;
     }
 
     # 监控网关服务配置
     server {
-        listen 80;
+        listen ${NGINX_PORT};
         server_name _;
 
         # 健康检查端点

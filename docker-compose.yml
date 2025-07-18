@@ -7,11 +7,12 @@ services:
       - ./nginx/nginx.conf:/tmp/nginx.conf
     environment:
       - METRICS_TOKEN=this_is_metrics_token
+      - NGINX_PORT=60080
     command: >
       sh -c "
         echo 'Generating nginx.conf from template...' &&
         echo 'Token value: '$$METRICS_TOKEN &&
-        sed 's/\$${METRICS_TOKEN}/'$$METRICS_TOKEN'/g' /tmp/nginx.conf.template > /tmp/nginx.conf &&
+        sed 's/\$${METRICS_TOKEN}/'$$METRICS_TOKEN'/g; s/\$${NGINX_PORT}/'$$NGINX_PORT'/g' /tmp/nginx.conf.template > /tmp/nginx.conf &&
         echo 'nginx.conf generated successfully' &&
         head -20 /tmp/nginx.conf
       "
@@ -20,9 +21,6 @@ services:
   nginx:
     image: nginx:alpine
     container_name: nginx-gateway
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
@@ -32,11 +30,10 @@ services:
       - nginx-init
       - node-exporter
       - cadvisor
-    networks:
-      - internal
+    network_mode: host
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     volumes:
       - /:/rootfs:ro
@@ -49,6 +46,8 @@ services:
     labels:
       - "monitoring.service=cadvisor"
       - "monitoring.host=web-server-1"
+    ports:
+      - "127.0.0.1:8080:8080"  # 只绑定到本地接口
     networks:
       - internal
 
@@ -65,12 +64,13 @@ services:
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
       - '--collector.systemd'
       - '--collector.processes'
+      - '--web.listen-address=127.0.0.1:9100'
     restart: unless-stopped
+    privileged: true
     labels:
       - "monitoring.service=node-exporter"
       - "monitoring.host=web-server-1"
-    networks:
-      - internal
+    network_mode: host
 
 networks:
   internal:
